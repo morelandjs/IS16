@@ -1,0 +1,5 @@
+*.pdf
+*.png
+*.hdf
+build/
+data/
