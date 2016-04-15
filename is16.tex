@@ -1,17 +1,23 @@
 \documentclass[xcolor=dvipsnames]{beamer}
-\usepackage{fontspec}
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{tikz}
-\setsansfont{Roboto Light}
+\usepackage{multicol}
+\usepackage[absolute, overlay]{textpos}
+\usepackage{fontspec}
+\setsansfont[
+ItalicFont=Roboto-LightItalic.ttf
+]{Roboto Light}
+\usepackage{tcolorbox}
+
 \graphicspath{{fig/}}
 
-% define color theme
+
+% define themes
 \usecolortheme{dolphin}
 
 % change text to offblack
 \definecolor{almostblack}{HTML}{262626}
-%\setbeamercolor{normal text}{fg=almostblack}
 \setbeamercolor{normal text}{fg=almostblack}
 
 % macros
@@ -53,7 +59,7 @@
 \setbeamertemplate{itemize item}{\raise.30ex\hbox{\vrule width .80ex height .80ex}}
 \setbeamertemplate{itemize subitem}{\raise.35ex\hbox{\vrule width .70ex height .70ex}}
 
-\title{Determining QGP initial conditions and medium properties with Bayesian analysis}
+%\title{Determining QGP initial conditions and medium properties via Bayesian model-to-data analysis}
 \author{J.S. Moreland, J.E. Bernhard, S.A. Bass}
 \date{\today}
 
@@ -72,13 +78,12 @@
     \coordinate (middle) at (current page.center);
     \def\sep{.028\paperwidth}
     \def\extra{.6em}
-    \node[rectangle, fill=theme, align=center, anchor=center, yshift=2.75cm, fill opacity=0.05, text opacity=1] at (middle) {
-      \color{theme}\Large
+    \node[rectangle, fill=theme, align=center, anchor=center, yshift=2.75cm, fill opacity=0.08, text opacity=1] at (middle) {
+      \color{theme} \Large
       Determining QGP initial conditions and medium\\
-      \color{theme}\Large
-      properties with Bayesian analysis
+      \color{theme} \Large
+      properties via Bayesian model-to-data analysis
     };
-    %\def\extra{.25ex}
     \node[align=center, anchor=center, yshift=1. cm] at (middle) {
       \insertauthor \\[\extra]
       Initial Stages~$\vert$~\insertdate
@@ -93,85 +98,104 @@
 
 \usebackgroundtemplate{}
 
-\begin{frame}{Reverse engineering IC from experiment}
-    \vfill
-    \begin{center}
-    
-    Objective is to constrain
-    $\frac{dS}{d^2r_\perp dy} \propto f(\underbrace{T_A, T_B}_{\text{\tiny thickness}})$ \\ 
-    
-    \vspace{0.5 cm}
-
-    using centrality dependent observables:\\
-    
-    \vspace{0.2 cm}
-    
-    yields $dN_\text{ch}/dy$, \quad mean $p_T$,\quad flow $v_n\{m\}$, \\
-    
-    \vspace{0.8 cm}
-    
-    and available collision systems:\\
- 
-    \vspace{0.3 cm}
-
-    \small
-    \begin{tabular}{cccccc}
-        \multicolumn{6}{c}{200 GeV} \\ 
-        \hline
-        U+U & Au+Au & Cu+Cu & Cu+Au & d+Au & p+p
-    \end{tabular} \\
-    \vspace{0.4 cm}
-    \begin{tabular}{ccc}
-        \multicolumn{3}{c}{2.76 \& 5.02 TeV} \\
-        \hline
-        Pb+Pb & p+Pb & p+p
-    \end{tabular}
-
-    \end{center}
+\begin{frame}{Motivation: why study the QGP initial conditions?}
+    \bigskip
+    QGP initial state and its various roles {\scriptsize [Angerami IS15' Napa]}: \\
+    \begin{itemize}
+        \item The initial conditions are interesting in their own right. \\
+        \medskip
+        One ultimately seeks a first principles description of initial entropy deposition and thermalization. \\
+        \medskip
+        \item The initial conditions are a "nuissance parameter" in hydrodynamic simulations. We need them to extract transport properties, e.g.\ ~$\eta/s$, ~$\zeta/s$, ~$\hat{e}$, ~$\hat{q}$, etc.     
+    \end{itemize}
+    \medskip
+    Deriving QGP IC from first principles is \emph{challenging}...\\ 
+    \medskip
+    \begin{tcolorbox}[width=\textwidth, colback=theme!10, colframe=theme!0]
+        Can we determine the IC from experiment without detailed knowledge of the initial stages of the collision?
+        \medskip \centering \\
+        What can we learn with such knowledge?
+    \end{tcolorbox}
 \end{frame}
 
-\begin{frame}{Simplifying initial conditions}
-    Start by defining local entropy (or energy) deposition in the eikonal approximation, 
+\begin{frame}{Deconstructing initial condition models}
+    Start by defining local entropy (or energy) deposition in the eikonal approximation,\\ 
     \begin{equation*}
         \frac{dS}{d^2r_\perp dy} \biggr \vert_{\sqrt{s_{NN}}} = \text{Norm} \cdot f(T_\text{part, A}, T_\text{part, B})
     \end{equation*}\\
     \vspace{0.1 cm}
     
-    Mapping should only respect matter \underline{in the cross section} and hence,
+    Mapping should only respect matter \underline{in the cross section} and hence,\\
     \begin{equation*}
         T_\text{part}(\vec{x}) = \sum\limits_{i=1}^{N_\text{part}} T_p(\vec{x} - \vec{x}_i)
     \end{equation*}
     In general, the normalization and mapping $f(T_\text{part, A}, T_\text{part, B})$ could have some dependence on $\sqrt{s_{NN}}$.
 \end{frame}
 
-\begin{frame}{Proposals for the mapping f}
-    Two-component "Glauber" ansatz: \\
-    \begin{flalign*}
-        f = (1 - \alpha)\underbrace{\frac{T_{\text{part}, A} +  T_{\text{part}, B}}{2}}_{\text{arithmetic mean}} 
-          + \alpha\, \underbrace{\sigma_{NN} T_{\text{part}, A}\, T_{\text{part}, B}}_{\text{quadratic term}}, 
-    \end{flalign*}
-
-    Original KLN model: \\
-    \begin{align*}
-        f &\sim Q^2_{s, \text{min}}\biggr[2 + \log\biggr(\frac{Q^2_{s,\text{max}}}{Q^2_{s, \text{min}}}\biggr)\biggr] \\
-          &\sim T_\text{part,min} \biggr[2 + \log\biggr(\frac{T_\text{part,max}}{T_\text{part,min}}\biggr)\biggr] \\
-    \end{align*}
+\begin{frame}{Thinking of boost-invariant IC models as a surface}
 \end{frame}
 
-\begin{frame}{\trento\ initial condition model}
-    Cat!
+\begin{frame}{Hybrid transport model}
+    Hybrid model \\
+    \begin{itemize}
+        \item iEBE-VISHNU model
+        \item HotQCD equation of state
+        \item UrQMD hadronic afterburner
+    \end{itemize}
 \end{frame}
 
+\begin{frame}{\trento\ initial condition model \quad{\scriptsize Phys.\ Rev.\ C {\bf 92}, no.\ 1, 011901 (2015)}}
+    \vspace{.6 cm}
+    \includegraphics{schematic} \\
+    \begin{enumerate}
+        \scriptsize
+        \setbeamercolor{item projected}{bg=theme!40, fg=almostblack}
+        \item Calc participants: $P_\text{coll}(b) = 1 - \exp[-\sigma_{gg} T_{pp}(b)]$, \quad $\int 2 \pi\, b\, db\, P_\text{coll}(b) = \sigma_\text{NN}^\text{inel}$ \\ \vspace{0.1 cm}
+        \item Build participant density: $T_A(x,y) = \sum\limits_{i=1}^{N_{\text{part},A}} \gamma_i T_p(x-x_i, y-y_i)$, \quad $\gamma \sim \Gamma(k, 1/k)$ \\
+        \item Parameterize entropy deposition w/ generalized mean: $dS/dy \propto \bigg(\frac{T_A^p + T_B^p}{2} \bigg)^{1/p}$
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Efficacy of the genealized mean}
+    \vspace{0.4 cm}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \includegraphics{thickness} 
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \begin{itemize}
+                \item dog
+                \item cat
+                \item monkey
+            \end{itemize}
+        \end{column}
+    \end{columns}
+    \vspace{0.2 cm}
+    \begin{columns}
+        \begin{column}{\textwidth}
+            \includegraphics{cgc_compare} \\
+            \scriptsize
+            The generalized mean can be tuned to replicate the behavior of many CGC calculations
+        \end{column}
+    \end{columns}
+\end{frame}
 
 \begin{frame}{Calibrating the model}
-    \vfill
-    \includegraphics[width=\textwidth]{observables_plot}
+    \vspace{0.4 cm}
+    \begin{itemize}
+        \scriptsize
+        \item Top row: run model ($\times10^4$ events) at each design point ($\times300$ parameter sets)
+        \vspace{0.2 cm}
+        \item Bottom row: emulator predictions for 100 samples from the posterior distribution
+    \end{itemize}
+    \vspace{0.2 cm}
+    \includegraphics{observables_plot}
 \end{frame}
 
 \begin{frame}{Running the model with high-likelihood parameters}
     \vfill
     \centering
-    \scriptsize
     \begin{columns}
         \begin{column}{0.4\textwidth}
             Choose high likelihood \\model parameters
@@ -188,40 +212,61 @@
         \end{column}
     \end{columns}
     \vspace{0.5 cm}
-    \includegraphics[width=\textwidth]{mode_observables} \\
+    \includegraphics{mode_observables} \\
     \vspace{0.2 cm}
     No emulator! Results represent actual hydro + UrQMD calculations!
 \end{frame}
 
 \begin{frame}
-    \begin{columns}
-        \begin{column}{0.2\textwidth}
-            \vspace{-0.8 cm}
-            \flushright \scriptsize
-            \textcolor{gray}{dS/dy prefactor} \\
-            \vspace{0.67 cm}
-            \textcolor{gray}{Saturation intens.} \\
-            \vspace{0.67 cm}
-            \textcolor{gray}{p+p fluctuation} \\
-            \vspace{0.67 cm}
-            \textcolor{gray}{Nucleon width} \\
-            \vspace{0.67 cm}
-            \textcolor{gray}{$\eta/s$ minimum} \\
-            \vspace{0.67 cm}
-            \textcolor{gray}{$\eta/s$ slope} \\
-            \vspace{0.67 cm}
-            \textcolor{gray}{$\zeta/s$ norm} \\
-            \vspace{0.67 cm}
-            \textcolor{gray}{Switching temp}
-        \end{column}
-        \begin{column}{0.8\textwidth}
-            \includegraphics[width=\columnwidth]{posterior_identified}
-        \end{column}
-    \end{columns}
+    \begin{flushleft}
+        \only<1->{\includegraphics{posterior_identified}}
+    \end{flushleft}
+
+    \begin{textblock}{10}(3.2, 1.2)
+        \only<3->{\textcolor{gray}{entropy normalization}}
+        \only<1,2>{entropy normalization}
+    \end{textblock}
+    
+    \begin{textblock}{10}(4.3, 3)
+        \only<2,4->{\textcolor{lightgray}{entropy normalization}}
+        \only<1,3>{entropy generalized mean}
+    \end{textblock}
+    
+    \begin{textblock}{10}(6.0, 4.8)
+        \only<2-3,5->{\textcolor{lightgray}{nucleon Gamma fluctuation}}
+        \only<1,4>{nucleon Gamma fluctuation}
+    \end{textblock}
+    
+    \begin{textblock}{10}(6.6, 6.6)
+        \only<2-4,6->{\textcolor{lightgray}{Gaussian nucleon width [fm]}}
+        \only<1,5>{Gaussian nucleon width [fm]}
+    \end{textblock}
+    
+    \begin{textblock}{10}(8.0, 8.4)
+        \only<2-5,7->{\textcolor{lightgray}{$\eta/s$ min at critical temperature}}
+        \only<1,6>{$\eta/s$ min at critical temperature}
+    \end{textblock}
+    
+    \begin{textblock}{10}(10.0, 10.2)
+        \only<2-6,8->{\textcolor{lightgray}{$\eta/s$ slope [GeV$^{-1}$]}}
+        \only<1,7>{$\eta/s$ slope [GeV$^{-1}$]}
+    \end{textblock}
+    
+    \begin{textblock}{10}(11.5, 12)
+        \only<2-7,9->{\textcolor{lightgray}{$\zeta/s$ normalization}}
+        \only<1,8>{$\zeta/s$ normalization}
+    \end{textblock}
+    
+    \begin{textblock}{10}(12.5, 13.6)
+        \only<2-8>{\textcolor{lightgray}{hydro-to-UrQMD \\
+        switching temp [GeV]}}
+        \only<1,9>{hydro-to-UrQMD \\
+        switching temp [GeV]}
+    \end{textblock}
 \end{frame}
 
 \begin{frame}
-    \includegraphics[width=\textwidth]{nch_per_npart_2}
+    \includegraphics{nch_per_npart_2}
 \end{frame}
 
 \begin{frame}{Conclusions}

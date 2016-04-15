@@ -9,8 +9,10 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.ticker as tick
 from matplotlib import patches
+from matplotlib.gridspec import GridSpec
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import lines
+from random import randint
 import colorsys
 import h5py
 import functools
@@ -18,16 +20,22 @@ import glob
 
 aspect = 1/1.618
 resolution = 72.27
-columnwidth = 246/resolution
-textwidth = 510/resolution
-textiny, texsmall, texnormal = 8.0, 9.25, 10.0
+textwidth = 307.28987/resolution
+textheight = 262.45619/resolution
+columnwidth = 0.5*textwidth
+textiny, texsmall, texnormal = 5.6, 6.475, 7.0
 offblack = '#262626'
 grey = '0.88'
 
 plt.rcdefaults()
 plt.rcParams.update({
-    'font.family': 'Roboto Light',
-    #'font.sans-serif': ['Roboto Light'],
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Roboto'],
+    'mathtext.fontset': 'custom',
+    'mathtext.default': 'it',
+    'mathtext.rm': 'sans',
+    'mathtext.it': 'sans:italic:medium',
+    'mathtext.cal': 'sans', 
     'font.size': texsmall,
     'legend.fontsize': texsmall,
     'axes.labelsize': texsmall,
@@ -38,18 +46,18 @@ plt.rcParams.update({
     'axes.labelweight': 400,
     'axes.titleweight': 400,
     'lines.linewidth': .9,
-    'lines.markersize': 3,
+    'lines.markersize': 2,
     'lines.markeredgewidth': .1,
     'patch.linewidth': .9,
-    'axes.linewidth': .5,
-    'xtick.major.width': .5,
-    'ytick.major.width': .5,
-    'xtick.minor.width': .5,
-    'ytick.minor.width': .5,
-    'xtick.major.size': 2,
-    'ytick.major.size': 2,
-    'xtick.minor.size': 1.3,
-    'ytick.minor.size': 1.3,
+    'axes.linewidth': .4,
+    'xtick.major.width': .4,
+    'ytick.major.width': .4,
+    'xtick.minor.width': .4,
+    'ytick.minor.width': .4,
+    'xtick.major.size': 1,
+    'ytick.major.size': 1,
+    'xtick.minor.size': 0.6,
+    'ytick.minor.size': 0.6,
     'xtick.major.pad': 1.8,
     'ytick.major.pad': 1.8,
     'text.color': offblack,
@@ -63,7 +71,6 @@ plt.rcParams.update({
     'image.interpolation': 'none',
     'pdf.fonttype': 42,
 })
-
 
 plot_functions = {}
 
@@ -399,7 +406,7 @@ def validation():
                 y = vld[key]['Y'][:, i]
                 yerr = vld[key]['Yerr'][:, i]
                 ax.errorbar(
-                    x, y, xerr=xerr, yerr=yerr, fmt='o', ms=4, capsize=0,
+                    x, y, xerr=xerr, yerr=yerr, fmt='o', capsize=0,
                     color=getattr(plt.cm, cmap)(0.8), mec='white', mew=0.3,
                     label='–'.join(map(str, cent_bins[i])) + '%'
                 )
@@ -500,7 +507,7 @@ def observables_plot():
     finish(h_pad=0, w_pad=0.3)
 
 
-def posterior(dataset, **kwargs):
+def posterior(dataset, highlight, **kwargs):
     design = 'data/bayesian/model/design.hdf'
     calibration = dataset
 
@@ -514,24 +521,29 @@ def posterior(dataset, **kwargs):
         ranges = np.array(f['range'])[indices]
 
     with h5py.File(calibration, 'r') as f:
-        chain = np.array(f['chain']).T[indices]
-        # chain = f['chain'][:1000000].T[indices]
+        #chain = np.array(f['chain']).T[indices]
+         chain = f['chain'][:1000000].T[indices]
 
     nxy = chain.shape[0]
     assert nxy == len(labels)
 
-    normal_cmap, highlight_cmap = plt.cm.Blues, plt.cm.Blues
+    normal_cmap, highlight_cmap = plt.cm.Blues, plt.cm.Oranges
 
     fig, axes = plt.subplots(
         nrows=nxy, ncols=nxy,
         sharex='col', sharey='row',
-        figsize=(textwidth, textwidth)
+        figsize=(textheight, textheight)
     )
 
     for n, (ax, c, lim) in enumerate(zip(axes.diagonal(), chain, ranges)):
-        cmap = highlight_cmap if n in [1, 6] else normal_cmap
-        line_color = cmap(.8)
-        fill_color = cmap(.5, alpha=.2)
+        #cmap = highlight_cmap if n in [1, 6] else normal_cmap
+        cmap = normal_cmap
+        if highlight is 'diagonal':
+            line_color = highlight_cmap(.8)
+            fill_color = highlight_cmap(.5, alpha=.2)
+        else:
+            line_color = normal_cmap(.8)
+            fill_color = normal_cmap(.5, alpha=.2)
 
         # override range for norm
         if n == 0:
@@ -540,7 +552,7 @@ def posterior(dataset, **kwargs):
         counts, edges = np.histogram(c, bins=100, range=lim)
         x = (edges[1:] + edges[:-1]) / 2
         y = .84 * (lim[1] - lim[0]) * counts / counts.max() + lim[0]
-        ax.plot(x, y, lw=0.8, color=line_color)
+        ax.plot(x, y, lw=0.4, color=line_color)
         ax.fill_between(x, lim[0], y, color=fill_color, zorder=-10)
 
         ticks = [0.14, 0.15, 0.16] \
@@ -562,31 +574,36 @@ def posterior(dataset, **kwargs):
         ax = axes[ny][nx]
         H, xedges, yedges = hist(bins=100)
         H[H == 0] = None
-        cmap = highlight_cmap if (ny, nx) == (5, 4) else normal_cmap
+        if highlight is 'lowerdiagonal':
+            if (ny, nx) == ((5, 4) or (4, 3)):
+                cmap = highlight_cmap
+            else:
+                cmap = normal_cmap
+        else:
+            cmap = normal_cmap
         ax.pcolorfast(xedges, yedges, H.T, cmap=cmap)
 
         ax = axes[nx][ny]
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
-        for side in 'left', 'right', 'top', 'bottom':
-            ax.spines[side].set_visible(False)
-        corrcoef = np.corrcoef(x, y)[1, 0]
-        color = 0.5 * (1 + corrcoef)
-        ax.patch.set_facecolor(plt.cm.coolwarm(color))
-        ax.patch.set_alpha(0.4)
-        ax.annotate("{0:.2f}".format(corrcoef).replace('-', u'\u2212'),
-                    xy=(0.5, 0.5),
-                    ha='center', va='center', xycoords='axes fraction',
-                    fontsize=texnormal)
+        ax.axis('off')
+    #    for side in 'left', 'right', 'top', 'bottom':
+    #        ax.spines[side].set_visible(False)
+    #    corrcoef = np.corrcoef(x, y)[1, 0]
+    #    color = 0.5 * (1 + corrcoef)
+    #    ax.patch.set_facecolor(plt.cm.coolwarm(color))
+    #    ax.patch.set_alpha(0.4)
+    #    ax.annotate("{0:.2f}".format(corrcoef).replace('-', u'\u2212'),
+    #                xy=(0.5, 0.5),
+    #                ha='center', va='center', xycoords='axes fraction',
+    #                fontsize=texnormal)
 
     for n, label in enumerate(labels):
-        axes[-1][n].set_xlabel(label)
-        axes[n][0].set_ylabel(label)
+        axes[-1][n].set_xlabel(label, fontsize=5)
+        axes[n][0].set_ylabel(label, fontsize=5)
 
-        axes[0][n].annotate(label, xy=(0.5, 1.01), xycoords='axes fraction',
-                            va='bottom', ha='center')
-        axes[n][-1].annotate(label, xy=(1.01, 0.5), xycoords='axes fraction',
-                             va='center', ha='left', rotation=-90)
+        #axes[0][n].annotate(label, xy=(0.5, 1.01), xycoords='axes fraction',
+        #                    va='bottom', ha='center')
+        #axes[n][-1].annotate(label, xy=(1.01, 0.5), xycoords='axes fraction',
+        #                     va='center', ha='left', rotation=-90)
 
         if n != 7:
             for t, justify in zip(axes[-1][n].xaxis.get_major_ticks(),
@@ -596,19 +613,27 @@ def posterior(dataset, **kwargs):
                                   ['bottom', 'center', 'top']):
                 t.label1.set_verticalalignment(justify)
 
-    finish(h_pad=0.3, w_pad=0.3, rect=[0, 0.0, 0.98, 0.98])
+    for ax in axes.flat:
+        ax.tick_params(axis='both', labelsize=4)
+        ax.get_xaxis().set_label_coords(0.5, -0.3)
+        ax.get_yaxis().set_label_coords(-0.4, 0.5)
+    finish(h_pad=0.1, w_pad=0.1, rect=[0, 0.0, 0.98, 0.98])
+
+@plot
+def posterior_identified_1():
+    filename = 'data/bayesian/calibration/results_err10.hdf'
+    posterior(filename, 'diagonal')
 
 
 @plot
-def posterior_identified():
+def posterior_identified_2():
     filename = 'data/bayesian/calibration/results_err10.hdf'
-    posterior(filename)
-
+    posterior(filename, 'lowerdiagonal')
 
 @plot
 def posterior_integrated():
     filename = 'data/bayesian/calibration/results_err10_dNch_deta_only.hdf'
-    posterior(filename)
+    posterior(filename, 'diagonal')
 
 
 @plot
@@ -736,7 +761,7 @@ def mode_observables(**kwargs):
 
                 yexp, yexperr = (exp[obs][subobs][k][:ncent]
                                  for k in ['y', 'yerr'])
-                ax.errorbar(x, yexp, yerr=yexperr, fmt='o', ms=2.5,
+                ax.errorbar(x, yexp, yerr=yexperr, fmt='o',
                             mfc=offblack, mew=0, capsize=0,
                             color=offblack, zorder=1000)
 
@@ -761,7 +786,7 @@ def mode_observables(**kwargs):
             ratio_ax.set_ylabel('Model/Exp' if n is 0 else '', labelpad=4)
             ratio_ax.set_xlim(0, 76)
 
-    finish(pad=0.0, h_pad=0, w_pad=0.3)
+    finish(pad=0.1, h_pad=0, w_pad=0.3)
 
 
 @plot
@@ -934,6 +959,31 @@ def trento_events():
 
 
 @plot
+def trento_minbias():
+    fig, axes = plt.subplots(5, 9, sharex=True, sharey=True,
+                             figsize=(10*columnwidth, 10*aspect*columnwidth))
+
+    x = np.linspace(-7, 7, 400)
+    lim = (-8, 8)
+    ticks = np.linspace(-5, 5, 3)
+
+    cdict = cm.get_cmap('Blues')._segmentdata
+    cdict['red'][0] = (0, 1, 1)
+    cdict['blue'][0] = (0, 1, 1)
+    cdict['green'][0] = (0, 1, 1)
+    my_cmap = LinearSegmentedColormap('Blues2', cdict)
+
+    for iev, ax in enumerate(axes.flat):
+        with h5py.File('events/minbias.hdf', 'r') as f:
+            ev = f['event_{}'.format(iev + 1)]
+            profile = np.array(ev)
+            cs = ax.pcolorfast(x, x, profile, zorder=-100, cmap=my_cmap)
+            cs.set_clim(0.0, np.max(profile))
+
+    finish(w_pad=0.3, h_pad=0.3)
+
+
+@plot
 def ipglasma():
     fig, (ax1, ax2) = \
         plt.subplots(2, 1, figsize=(columnwidth, 1.8*aspect*columnwidth),
@@ -1010,6 +1060,87 @@ def ipglasma():
     ax2.text(11, 0.36, r'$\varepsilon_3$')
 
     finish(h_pad=1)
+
+@plot
+def schematic():
+    fig = plt.figure(figsize=(0.9*textwidth, 0.48*textwidth))
+    gs = GridSpec(4, 6)
+    ax1 = fig.add_subplot(gs[:4,:2]) 
+    ax2 = fig.add_subplot(gs[:2,2:4])
+    ax3 = fig.add_subplot(gs[2:,2:4], sharex=ax2) 
+    ax4 = fig.add_subplot(gs[:4,4:])
+    axes = ax1, ax2, ax3, ax4
+
+    # plot nucleons
+    def plt_nucleons(ax):
+        ax.scatter(nuclA[:,0], nuclA[:,1], s=20, facecolors='none', lw=0.2, alpha=0.2, edgecolors = offblack, zorder=1)
+        ax.scatter(nuclB[:,0], nuclB[:,1], s=20, facecolors='none', lw=0.2, alpha=0.2, edgecolors = offblack, zorder=1)
+    
+    # load collision data
+    nucl = np.loadtxt("data/trento/participants.dat")
+    nuclA = nucl[(nucl[:,2] >= 0) & (nucl[:,3] == 1)]
+    nuclB = nucl[(nucl[:,2] >= 0) & (nucl[:,3] == 2)]
+    partA = nucl[(nucl[:,2] > 0) & (nucl[:,3] == 1)]
+    partB = nucl[(nucl[:,2] > 0) & (nucl[:,3] == 2)]
+    
+    # plot participants
+    plt_nucleons(ax1)
+    ax1.annotate(r'1)', xy=(-10,8.5), ha='left', va='top', xycoords='data', fontsize=texnormal)
+
+    for i in range(len(partA)):
+        z = randint(1,1000)
+        ax1.scatter(partA[i,0], partA[i,1], s=20, facecolors=plt.cm.Blues(0.5), edgecolors='w', lw=0.2, alpha=0.8, zorder=z)
+    for i in range(len(partB)):
+        z = randint(1,1000)
+        ax1.scatter(partB[i,0], partB[i,1], s=20, facecolors=plt.cm.Oranges(0.5), edgecolors='w', lw=0.2, alpha=0.8, zorder=z)
+    
+    # plot thickness functions
+    plt_nucleons(ax2) 
+    cmap = plt.cm.Oranges
+    cmap.set_under('white')
+    TB = np.fliplr(np.loadtxt('data/trento/TB.dat')).T
+    ax2.imshow(TB, extent=(-9,9,-9,9), cmap=cmap, vmin=0.2)
+    ax2.annotate(r'2) $T_A$', xy=(-10,8.75), ha='left', va='top', xycoords='data', fontsize=texnormal)
+    ax2.get_xaxis().set_visible(False)
+    ax2.spines['bottom'].set_visible(False)
+    
+    plt_nucleons(ax3) 
+    cmap = plt.cm.Blues
+    cmap.set_under('white')
+    TA = np.fliplr(np.loadtxt('data/trento/TA.dat')).T
+    ax3.imshow(TA, aspect='equal', extent=(-9,9,-9,9), cmap=cmap, vmin=0.2)
+    ax3.annotate(r'2) $T_B$', xy=(-10,8.75), ha='left', va='top', xycoords='data', fontsize=texnormal)
+
+    plt_nucleons(ax4) 
+    cmap = plt.cm.Greens
+    cmap.set_under('white')
+    TR = np.fliplr(np.loadtxt('data/trento/TR.dat')).T
+    ax4.imshow(TR, aspect='equal', extent=(-9,9,-9,9), cmap=cmap, vmin=0.2)
+    ax4.annotate(r'3) $dS/dy$', xy=(-10,8.75), ha='left', va='top', xycoords='data', fontsize=texnormal)
+    
+    # global fig properties
+    for ax in axes:
+        ax.set_aspect('equal')
+        ax.set_xlim(-12,12)
+        ax.set_ylim(-9, 9)
+        ax.set_xticks([-10, -5, 0, 5, 10])
+        ax.set_yticks([-5, 0, 5])
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.xaxis.set_ticks_position('bottom')
+        ax.yaxis.set_ticks_position('left')
+        if ax is not ax1:
+            ax.get_yaxis().set_visible(False)
+        if ax is ax2:
+            ax.get_yaxis().set_visible(False)
+            
+
+    plt.subplots_adjust(hspace=0, wspace=0)
+    ax1.set_xlabel(r'$x$ $[\mathrm{fm}]$')
+    ax1.set_ylabel(r'$y$ $[\mathrm{fm}]$')
+    ax3.set_xlabel(r'$x$ $[\mathrm{fm}]$')
+    ax4.set_xlabel(r'$x$ $[\mathrm{fm}]$')
+    plt.tight_layout(h_pad=0, w_pad=0, pad=0.1) 
 
 
 def main():
