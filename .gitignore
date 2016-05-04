@@ -3,4 +3,4 @@
 *.hdf
 *.svg
 build/
-data/
+fig/data

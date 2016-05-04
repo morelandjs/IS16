@@ -2,16 +2,34 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{tikz}
+\usepackage{tikzscale}
+\usetikzlibrary{positioning}
+\usetikzlibrary{arrows.meta}
+\usetikzlibrary{fit}
+\usepackage{filecontents}
 \usepackage{multicol}
-\usepackage[absolute, overlay]{textpos}
+\usepackage[export]{adjustbox}
+\usepackage{tcolorbox}
 \usepackage{fontspec}
 \setsansfont[
 ItalicFont=Roboto-LightItalic.ttf
 ]{Roboto Light}
-\usepackage{tcolorbox}
-
 \graphicspath{{fig/}}
 
+% generalized mean line
+\begin{filecontents*}{genmean.tikz}
+    \centering
+    \begin{tikzpicture}
+        \tiny
+        \draw[thick,<->] (0,0) -- (4,0);
+        \foreach \x in {1,2,3} \draw[thick] (\x cm,2pt) -- (\x cm,-2pt);
+        \draw (0,0) node[below=3pt] {$ p=-\infty $} node[above=5pt] {min};
+        \draw (1,0) node[below=3pt] {$ -1 $} node[above=3pt] {harmonic};
+        \draw (2,0) node[below=3pt] {$ 0 $} node[above=5pt] {geometric};
+        \draw (3,0) node[below=3pt] {$ 1 $} node[above=3pt] {arithmetic};
+        \draw (4,0) node[below=3pt] {$ \infty $} node[above=5pt] {max};
+    \end{tikzpicture}
+\end{filecontents*}
 
 % define themes
 \usecolortheme{dolphin}
@@ -20,8 +38,11 @@ ItalicFont=Roboto-LightItalic.ttf
 \definecolor{almostblack}{HTML}{262626}
 \setbeamercolor{normal text}{fg=almostblack}
 
+\definecolor{pyred}{HTML}{DA2623}
+\definecolor{pyblue}{HTML}{2E7EBC}
+
 % macros
-\newcommand{\trento}{T\raisebox{-0.5ex}{R}ENTo}
+\newcommand{\trento}{T\raisebox{-0.3ex}{R}ENTo}
 
 \definecolor{theme}{RGB}{90,122,163}
 \usecolortheme[named=theme]{structure}
@@ -98,49 +119,69 @@ ItalicFont=Roboto-LightItalic.ttf
 
 \usebackgroundtemplate{}
 
-\begin{frame}{Motivation: why study the QGP initial conditions?}
+\begin{frame}{Why study the QGP initial conditions?}
     \bigskip
     QGP initial state and its various roles {\scriptsize [Angerami IS15' Napa]}: \\
     \begin{itemize}
-        \item The initial conditions are interesting in their own right. \\
+        \item Initial conditions are interesting in their own right... \\
         \medskip
-        One ultimately seeks a first principles description of initial entropy deposition and thermalization. \\
+        One ultimately seeks first principles description of initial entropy 
+        deposition and thermalization. \\
         \medskip
-        \item The initial conditions are a "nuissance parameter" in hydrodynamic simulations. We need them to extract transport properties, e.g.\ ~$\eta/s$, ~$\zeta/s$, ~$\hat{e}$, ~$\hat{q}$, etc.     
+        \item Initial conditions are a "nuissance parameter" in hydrodynamic 
+              simulations. Needed to extract transport properties, e.g.\ 
+              ~$\eta/s$, ~$\zeta/s$, ~$\hat{e}$, ~$\hat{q}$, etc.     
     \end{itemize}
     \medskip
     Deriving QGP IC from first principles is \emph{challenging}...\\ 
     \medskip
     \begin{tcolorbox}[width=\textwidth, colback=theme!10, colframe=theme!0]
-        Can we determine the IC from experiment without detailed knowledge of the initial stages of the collision?
+        Can we determine the IC from experiment without detailed knowledge of 
+        the initial stages of the collision?
         \medskip \centering \\
         What can we learn with such knowledge?
     \end{tcolorbox}
 \end{frame}
 
 \begin{frame}{Deconstructing initial condition models}
-    Start by defining local entropy (or energy) deposition in the eikonal approximation,\\ 
-    \begin{equation*}
-        \frac{dS}{d^2r_\perp dy} \biggr \vert_{\sqrt{s_{NN}}} = \text{Norm} \cdot f(T_\text{part, A}, T_\text{part, B})
-    \end{equation*}\\
-    \vspace{0.1 cm}
-    
-    Mapping should only respect matter \underline{in the cross section} and hence,\\
-    \begin{equation*}
-        T_\text{part}(\vec{x}) = \sum\limits_{i=1}^{N_\text{part}} T_p(\vec{x} - \vec{x}_i)
-    \end{equation*}
-    In general, the normalization and mapping $f(T_\text{part, A}, T_\text{part, B})$ could have some dependence on $\sqrt{s_{NN}}$.
-\end{frame}
-
-\begin{frame}{Thinking of boost-invariant IC models as a surface}
-\end{frame}
-
-\begin{frame}{Hybrid transport model}
-    Hybrid model \\
+    \bigskip
+    \includegraphics{deconstructing} \\
     \begin{itemize}
-        \item iEBE-VISHNU model
-        \item HotQCD equation of state
-        \item UrQMD hadronic afterburner
+        \small
+        \item Woods-Saxon, Glauber modeling aspects generally well accepted \\
+        \item Useful to separate cross sections and entropy deposition map, \\
+        \medskip i.e.\ ~~$dS/dy \sim f(\tilde{T}_A, \tilde{T}_B)$ where $\tilde{T}$ 
+                 is a participant thickness or \\
+        \smallskip wounded nucleon density. \emph{The mapping $f$ is some 2D surface.}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Parametrizing the initial conditions}
+    \vfill
+    \begin{columns}
+        \begin{column}{0.45\textwidth}
+            \vfill
+            \includegraphics{mapping}
+        \end{column}
+        \vline
+        \begin{column}{0.55\textwidth}
+            \smallskip
+            \centering \small Generalized mean ansatz: \\
+            \smallskip {\large $\frac{dS}{d^2r dy} \propto \Bigl(\frac{T_A^p + T_B^p}{2}\Bigr)^{1/p} $} \\
+            \medskip
+            \includegraphics{genmean.tikz} \\
+            \bigskip \smallskip
+            \includegraphics{thickness} 
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Reproducing existing IC models}
+    \includegraphics{cgc_compare} \\
+    \begin{itemize}
+        \item KLN model: \quad $dS/dy \sim Q^2_{s,\text{min}} \Big[2 + \log \Big(\frac{Q^2_{s,\text{max}}}{Q^2_{s,\text{min}}}\Big) \Big]$
+        \item EKRT model: \quad $dS/dy \sim$
+        \item WN model: \quad $dS/dy \propto T_A + T_B$
     \end{itemize}
 \end{frame}
 
@@ -156,54 +197,165 @@ ItalicFont=Roboto-LightItalic.ttf
     \end{enumerate}
 \end{frame}
 
-\begin{frame}{Efficacy of the genealized mean}
-    \vspace{0.4 cm}
-    \begin{columns}
-        \begin{column}{0.5\textwidth}
-            \includegraphics{thickness} 
-        \end{column}
-        \begin{column}{0.5\textwidth}
-            \centering
-            \begin{itemize}
-                \item dog
-                \item cat
-                \item monkey
-            \end{itemize}
-        \end{column}
-    \end{columns}
-    \vspace{0.2 cm}
-    \begin{columns}
-        \begin{column}{\textwidth}
-            \includegraphics{cgc_compare} \\
-            \scriptsize
-            The generalized mean can be tuned to replicate the behavior of many CGC calculations
-        \end{column}
-    \end{columns}
+\usebackgroundtemplate{%
+\tikz[overlay,remember picture] \node[at=(current page.center)] {
+   \includegraphics[width=\paperwidth]{trento_minbias}};
+}
+
+\begin{frame}
 \end{frame}
 
-\begin{frame}{Calibrating the model}
-    \vspace{0.4 cm}
+\usebackgroundtemplate{}
+
+\begin{frame}{Modern event-by-event hybrid model}
+    \bigskip
     \begin{itemize}
-        \scriptsize
-        \item Top row: run model ($\times10^4$ events) at each design point ($\times300$ parameter sets)
-        \vspace{0.2 cm}
-        \item Bottom row: emulator predictions for 100 samples from the posterior distribution
+        \item \trento\ initial conditions \\
+        {\scriptsize Moreland, Bernhard, Bass, PRC {\bf 92}, no.\ 1, 011901 (2015)} \\
+        \begin{table}
+            \scriptsize \flushleft
+            \begin{tabular}{r l}
+                norm & entropy normalization \\ 
+                $p$ & entropy deposition parameter \\
+                $k$ & proton-proton multiplicity fluctuations \\
+                $w$ & Gaussian nucleon width
+            \end{tabular}
+        \end{table}
+        \medskip
+        \item HotQCD equation of state \\
+        {\scriptsize Bazavov, et.\ al.\ PRD {\bf 90}, 094503 (2014)} \\
+        \smallskip 
+        \item iEBE-VISHNU hydrodynamics \\
+        {\scriptsize Shen, Qiu, Song, Bernhard, Bass, Heinz, Comp.\ Phys.\ Comm.\ {\bf 199}, 61 (2016)}  
+        \begin{table}
+            \scriptsize \flushleft
+            \begin{tabular}{r l}
+                $\eta/s$ min & shear viscosity minimum \\ 
+                $\eta/s$ slope & shear viscosity slope \\
+                $\zeta/s$ norm & bulk viscosity normalization \\
+                $T_\text{sw}$ & hydro-to-urqmd switching temp
+            \end{tabular}
+        \end{table}
+        \medskip
+        \item UrQMD hadronic afterburner \\
+        {\scriptsize Bass et.\ al, Prog.\ Part.\ Nucl.\ Phys.\ {\bf 41}, 255 (1998)} \\
+        {\scriptsize Bleicher et.\ al, J.\ Phys.\ G {\bf 25}, 1859 (1999)}
     \end{itemize}
-    \vspace{0.2 cm}
-    \includegraphics{observables_plot}
 \end{frame}
 
-\begin{frame}{Running the model with high-likelihood parameters}
+\begin{frame}{The challenge of rigorous model-to-data comparison}
+   
+    \begin{tikzpicture}[overlay, remember picture]
+        \node [anchor=east, left=1cm of current page.north, yshift=-1.6cm] (t1) {\large Parameter};
+        \node [anchor=west, right=1cm of current page.north, yshift=-1.6cm] (t2) {\large Observable};
+        
+        \node [anchor=east, left=1cm of current page.north, yshift=-2.2cm] (a1) {\small shear viscosity};
+        \node [anchor=east, left=1cm of current page.north, yshift=-2.7cm] (a2) {\small bulk viscosity};
+        \node [anchor=east, left=1cm of current page.north, yshift=-3.2cm] (a3) {\small pre-equilibrium flow};
+        \node [anchor=east, left=1cm of current page.north, yshift=-3.7cm] (a4) {\small nucleon width};
+        \node [anchor=east, left=1cm of current page.north, yshift=-4.2cm] (a5) {\small hadronization temp};
+        \node [anchor=east, left=1cm of current page.north, yshift=-4.7cm] (a6) {\small p+p fluctuations};
+
+        \node [anchor=west, right=1cm of current page.north, yshift=-2.2cm] (b1) {\small identified yields};
+        \node [anchor=west, right=1cm of current page.north, yshift=-2.7cm] (b2) {\small identified mean $p_T$};
+        \node [anchor=west, right=1cm of current page.north, yshift=-3.2cm] (b3) {\small flow cumulants};
+        \node [anchor=west, right=1cm of current page.north, yshift=-3.7cm] (b4) {\small mode mixing observables};
+        \node [anchor=west, right=1cm of current page.north, yshift=-4.2cm] (b5) {\small event plane decorrelations};
+        \node [anchor=west, right=1cm of current page.north, yshift=-4.7cm] (b6) {\small HBT interferometry};
+
+        \draw [almostblack, line width=0.2pt] (a1.east) -- (b1.west);
+        \draw [almostblack, line width=0.2pt] (a1.east) -- (b2.west);
+        \draw [almostblack, line width=0.2pt] (a1.east) -- (b3.west);
+        \draw [almostblack, line width=0.2pt] (a1.east) -- (b4.west);
+        \draw [almostblack, line width=0.2pt] (a1.east) -- (b5.west);
+        \draw [almostblack, line width=0.2pt] (a1.east) -- (b6.west);
+        
+        \draw [almostblack, line width=0.2pt] (a2.east) -- (b1.west);
+        \draw [almostblack, line width=0.2pt] (a2.east) -- (b2.west);
+        \draw [almostblack, line width=0.2pt] (a2.east) -- (b3.west);
+        \draw [almostblack, line width=0.2pt] (a2.east) -- (b4.west);
+        \draw [almostblack, line width=0.2pt] (a2.east) -- (b5.west);
+        \draw [almostblack, line width=0.2pt] (a2.east) -- (b6.west);
+        
+        \draw [almostblack, line width=0.2pt] (a3.east) -- (b1.west);
+        \draw [almostblack, line width=0.2pt] (a3.east) -- (b2.west);
+        \draw [almostblack, line width=0.2pt] (a3.east) -- (b3.west);
+        \draw [almostblack, line width=0.2pt] (a3.east) -- (b4.west);
+        \draw [almostblack, line width=0.2pt] (a3.east) -- (b5.west);
+        \draw [almostblack, line width=0.2pt] (a3.east) -- (b6.west);
+
+        \draw [almostblack, line width=0.2pt] (a4.east) -- (b1.west);
+        \draw [almostblack, line width=0.2pt] (a4.east) -- (b2.west);
+        \draw [almostblack, line width=0.2pt] (a4.east) -- (b3.west);
+        \draw [almostblack, line width=0.2pt] (a4.east) -- (b4.west);
+        \draw [almostblack, line width=0.2pt] (a4.east) -- (b5.west);
+        \draw [almostblack, line width=0.2pt] (a4.east) -- (b6.west);
+
+        \draw [almostblack, line width=0.2pt] (a5.east) -- (b1.west);
+        \draw [almostblack, line width=0.2pt] (a5.east) -- (b2.west);
+        \draw [almostblack, line width=0.2pt] (a5.east) -- (b3.west);
+        \draw [almostblack, line width=0.2pt] (a5.east) -- (b4.west);
+        \draw [almostblack, line width=0.2pt] (a5.east) -- (b5.west);
+        \draw [almostblack, line width=0.2pt] (a5.east) -- (b6.west);
+        
+        \draw [almostblack, line width=0.2pt] (a6.east) -- (b1.west);
+        \draw [almostblack, line width=0.2pt] (a6.east) -- (b2.west);
+        \draw [almostblack, line width=0.2pt] (a6.east) -- (b3.west);
+        \draw [almostblack, line width=0.2pt] (a6.east) -- (b4.west);
+        \draw [almostblack, line width=0.2pt] (a6.east) -- (b5.west);
+        \draw [almostblack, line width=0.2pt] (a6.east) -- (b6.west);
+    \end{tikzpicture}
+    \vspace{3.5 cm} \\
+    \begin{tcolorbox}[width=\textwidth, colback=theme!10, colframe=theme!0]
+        \centering
+        \small Testing a single set of parameters requires $\mathcal{O}(10^4)$ hydro events \\
+        \small \smallskip ...and evaluating eight different parameters five times each\\ requires $5^8 \times 10^4 \approx 10^9$ hydro events. \bigskip \\
+        {\large That's roughly $10^5$ computer \emph{years}!}
+    \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{Solution: modern Bayesian methodology}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \begin{enumerate}
+                \item Replace factorial design with Latin hypercube
+            \end{enumerate}
+        \end{column}
+        \vline
+        \begin{column}{0.5\textwidth}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Calibrating the model: before and after}
+    \medskip
+    \includegraphics{observables_plot} \\
+    \bigskip
+    \begin{itemize}
+        \small
+        \item Top: run model ($\times 10^4$ events) at each design point ($\times300$ evals)
+        \vspace{0.2 cm}
+        \item Bottom: emulator predictions for 100 samples from the posterior
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Running the model with high probability parameters}
     \vfill
     \centering
     \begin{columns}
         \begin{column}{0.4\textwidth}
-            Choose high likelihood \\model parameters
+            \scriptsize
+            \begin{itemize}
+                \item Choose high probability model param.\ from Bayesian posterior (listed right)
+                \smallskip
+                \item Run full hybrid model using high probability parameters (shown bottom)
+            \end{itemize}
         \end{column}
         \begin{column}{0.6\textwidth}
+            \scriptsize
             \begin{tabular}{lllll}
                 \multicolumn{2}{c}{Initial condition} & & \multicolumn{2}{c}{QGP medium} \\
-                \noalign{\smallskip}\hline\noalign{\smallskip}
+                \noalign{\smallskip}\hline\noalign{\medskip}
                 norm & 120.          &&  $\eta/s$ min   & 0.08       \\
                 $p$  & 0.0           &&  $\eta/s$ slope & 0.85 GeV$^{-1}$   \\
                 $k$  & 1.5           &&  $\zeta/s$ norm & 1.25       \\
@@ -212,70 +364,105 @@ ItalicFont=Roboto-LightItalic.ttf
         \end{column}
     \end{columns}
     \vspace{0.5 cm}
-    \includegraphics{mode_observables} \\
-    \vspace{0.2 cm}
-    No emulator! Results represent actual hydro + UrQMD calculations!
+    \includegraphics{mode_observables}
 \end{frame}
 
 \begin{frame}
-    \begin{flushleft}
-        \only<1->{\includegraphics{posterior_identified}}
-    \end{flushleft}
+    \begin{columns}
+        \begin{column}{1 cm}
+            \centering
+            \hspace{0.5 cm}
+            \rotatebox[origin=c]{90}{\scriptsize \only<1>{\color{pyblue}} 
+            \only<2->{\color{pyblue!40}} Calibrated to identified particles}
+        \end{column}
+        \begin{column}{\paperheight}
+            \centering \vspace{0.3 cm}\\
+            \begin{tikzpicture}
+                \only<1>{\node [opacity=1] (post) {\includegraphics{posterior}};}
+                \only<2->{\node [opacity=0.3] (post) {\includegraphics{posterior}};}
+            \end{tikzpicture}
+        \end{column}
+        \begin{column}{1 cm}
+            \centering
+            \rotatebox[origin=c]{-90}{\scriptsize \only<1>{\color{pyred}} 
+            \only<2->{\color{pyred!40}} Calibrated to charged particles}
+            \hspace{0.4 cm}
+        \end{column}
+    \end{columns}
 
-    \begin{textblock}{10}(3.2, 1.2)
-        \only<3->{\textcolor{gray}{entropy normalization}}
-        \only<1,2>{entropy normalization}
-    \end{textblock}
-    
-    \begin{textblock}{10}(4.3, 3)
-        \only<2,4->{\textcolor{lightgray}{entropy normalization}}
-        \only<1,3>{entropy generalized mean}
-    \end{textblock}
-    
-    \begin{textblock}{10}(6.0, 4.8)
-        \only<2-3,5->{\textcolor{lightgray}{nucleon Gamma fluctuation}}
-        \only<1,4>{nucleon Gamma fluctuation}
-    \end{textblock}
-    
-    \begin{textblock}{10}(6.6, 6.6)
-        \only<2-4,6->{\textcolor{lightgray}{Gaussian nucleon width [fm]}}
-        \only<1,5>{Gaussian nucleon width [fm]}
-    \end{textblock}
-    
-    \begin{textblock}{10}(8.0, 8.4)
-        \only<2-5,7->{\textcolor{lightgray}{$\eta/s$ min at critical temperature}}
-        \only<1,6>{$\eta/s$ min at critical temperature}
-    \end{textblock}
-    
-    \begin{textblock}{10}(10.0, 10.2)
-        \only<2-6,8->{\textcolor{lightgray}{$\eta/s$ slope [GeV$^{-1}$]}}
-        \only<1,7>{$\eta/s$ slope [GeV$^{-1}$]}
-    \end{textblock}
-    
-    \begin{textblock}{10}(11.5, 12)
-        \only<2-7,9->{\textcolor{lightgray}{$\zeta/s$ normalization}}
-        \only<1,8>{$\zeta/s$ normalization}
-    \end{textblock}
-    
-    \begin{textblock}{10}(12.5, 13.6)
-        \only<2-8>{\textcolor{lightgray}{hydro-to-UrQMD \\
-        switching temp [GeV]}}
-        \only<1,9>{hydro-to-UrQMD \\
-        switching temp [GeV]}
-    \end{textblock}
-\end{frame}
+    \only<2>{
+    \begin{tikzpicture}[remember picture, overlay]
+        \filldraw [draw=almostblack, fill=almostblack, overlay, opacity=0.1, anchor=center] (current page.south west) rectangle (\pagewidth,\pagewidth);
+        \node[inner sep=0pt, yshift=1cm, overlay] (node1) at (current page.center) {\includegraphics{posterior_p_arrows}};
+        \node[inner sep=0pt, below=2ex of node1.south, anchor=north] {
+            \begin{tcolorbox}[width=0.552\textwidth, boxrule=0pt, colback=white, colframe=almostblack, sharp corners]
+                \scriptsize \centering
+                Generalized mean parametrization: \medskip \\
+                $dS/dy \propto \Big(\frac{T_A^p + T_B^p}{2}\Big)^{1/p}$
+            \end{tcolorbox}
+        };
+    \end{tikzpicture}}
 
-\begin{frame}
-    \includegraphics{nch_per_npart_2}
+    \only<3>{
+    \begin{tikzpicture}[remember picture, overlay]
+        \filldraw [draw=almostblack, fill=almostblack, overlay, opacity=0.1, anchor=center] (current page.south west) rectangle (\pagewidth,\pagewidth);
+        \node[inner sep=0pt, yshift=1cm, overlay] at (current page.center) {\includegraphics{posterior_k}};
+        \node[inner sep=0pt, below=2ex of node1.south, anchor=north] {
+            \begin{tcolorbox}[width=0.552\textwidth, boxrule=0pt, colback=white, colframe=almostblack, sharp corners]
+                \scriptsize \centering
+                Random Gamma nucleon weights: \medskip \\
+                $P(\gamma\, \vert\, k) = \frac{k^k}{\Gamma(k)} \gamma^{k - 1} e^{-k \gamma}$ \\ 
+                $T_A(x,y) = \sum\limits_{i=1}^{N_{\text{part},A}} \gamma_i T_p(x-x_i, y-y_i)$
+            \end{tcolorbox}
+        };
+    \end{tikzpicture}}
+
+    \only<4>{
+    \begin{tikzpicture}[remember picture, overlay]
+        \filldraw [draw=almostblack, fill=almostblack, overlay, opacity=0.1, anchor=center] (current page.south west) rectangle (\pagewidth,\pagewidth);
+        \node[inner sep=0pt, yshift=1cm, overlay] at (current page.center) {\includegraphics{posterior_w}};
+        \node[inner sep=0pt, below=2ex of node1.south, anchor=north] {
+            \begin{tcolorbox}[width=0.552\textwidth, boxrule=0pt, colback=white, colframe=almostblack, sharp corners]
+                \scriptsize \centering
+                Gaussian nucleon thickness: \medskip \\
+                $T_p(x,y) = \frac{1}{2 \pi w^2} e^{-(x^2 +y^2)/(2w^2)}$
+            \end{tcolorbox}
+        };
+    \end{tikzpicture}}
+
+    \only<5>{
+    \begin{tikzpicture}[remember picture, overlay]
+        \filldraw [draw=almostblack, fill=almostblack, overlay, opacity=0.1, anchor=center] (current page.south west) rectangle (\pagewidth,\pagewidth);
+        \node[inner sep=0pt, yshift=1cm] at (current page.center) {\includegraphics{etas_estimate}};
+        \node[inner sep=0pt, below=2ex of node1.south, anchor=north] {
+            \begin{tcolorbox}[width=0.552\textwidth, boxrule=0pt, colback=white, colframe=almostblack, sharp corners]
+                \scriptsize \centering
+                Shear viscosity parametrization: \medskip \\
+                $(\eta/s)(T) = (\eta/s)_\text{min} + (T - T_c) (\eta/s)_\text{slope}$ 
+            \end{tcolorbox}
+        };
+    \end{tikzpicture}}
+    
 \end{frame}
 
 \begin{frame}{Conclusions}
-Yields, mean $p_T$ and flows impose strong constraints on IC. \\
-Entropy  deposition mimic'd by $dS/dy \sim \sqrt{T_A T_B}$ \\
-Data strongly prefers small nucleon width $w \approx 0.43$ fm! \\
-A+A collisions weakly sensitivie to p+p mult.\ fluctuations \\
-Prefered initial conditions similar to EKRT, IP-Glasma \\
-
-
+\medskip
+Initial condition properties
+\begin{itemize}
+    \item Yields, mean $p_T$ and flows impose strong constraints on IC. \\
+    \item Entropy  deposition mimic'd by $dS/dy \sim \sqrt{T_A T_B}$ \\
+    \item Data strongly prefers small nucleon width $w \approx 0.4\mathrm{-}0.5$ fm! \\
+    \item A+A collisions weakly sensitive to p+p mult.\ fluctuations \\
+    \item Prefered initial conditions similar to EKRT, IP-Glasma \\
+\end{itemize}
+\smallskip
+Hydrodynamic transport properties
+\begin{itemize}
+    \item First quantitative credibility interval on $(\eta/s)(T)$!
+    \item Data prefers non-zero bulk viscosity
+    \item Hydro-to-micro $T_\text{sw}$ determined by relative species yields 
+\end{itemize}
+\vfill
+\trento\ is publicly available at \url{qcd.phy.duke.edu/trento}
 \end{frame}
 \end{document}
