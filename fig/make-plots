@@ -81,7 +81,6 @@ plt.rcParams.update({
 
 plot_functions = {}
 
-
 def plot(f):
     def wrapper(*args, **kwargs):
         print(f.__name__)
@@ -140,6 +139,20 @@ def fmt_tick(n):
 def desaturate(color, fraction=0.5):
     h, l, s = colorsys.rgb_to_hls(*color[:3])
     return colorsys.hls_to_rgb(h, l, fraction*s)
+
+
+TRENTO_LABEL = r'T\raisebox{-.5ex}{R}ENTo'
+
+
+def set_trento_label(legend, i):
+    """
+    Mark the `i`th label of a legend as containing the T_RENTo logo.
+
+    """
+    t = legend.get_texts()[i]
+    t.set_usetex(True)
+    t.set_y(-.18*t.get_size())
+    return legend
 
 
 def gen_mean(x, y, p):
@@ -216,35 +229,33 @@ def npart(TA, TB, sigma):
 @plot
 def cgc_compare():
     fig, axes = plt.subplots(
-        ncols=3, figsize=(textwidth, 0.55*columnwidth), sharey=True
+        nrows=3, figsize=(0.4*textwidth, 0.88*textheight), sharex=True
     )
 
-    labels = ['KLN', 'EKRT', 'WN']
-    functions = [kln, ekrt, lambda x, y: (x + y)/2]
-    pvals = [pfit(kln), [0, 1.09], [1, 1]]
-    #pvals = [pfit(kln), pfit(ekrt), [1, 1]]
+    labels = ['WN', 'EKRT', 'KLN']
+    functions = [lambda x, y: (x + y)/2, ekrt, kln]
+    pvals = [[1, 1], [0, 1.09], pfit(kln)]
     TB = [1, 2, 3]
 
     for ax, (p, norm), func, label in zip(axes, pvals, functions, labels):
         X = np.linspace(0, 4, 1000)
         for Y in TB:
-            ax.plot(X, norm*gen_mean(X, Y, p), lw=0.8, color=plt.cm.Blues(0.6),
+            ax.plot(X, norm*gen_mean(X, Y, p), lw=0.6, color=plt.cm.Blues(0.6),
                  label='Gen. mean, $p={}$'.format(p) if Y == 1 else '')
 
-            ax.plot(X, func(X, Y), lw=0.8, dashes=(4, 3),
+            ax.plot(X, func(X, Y), lw=0.6, dashes=(4, 3),
                  color='0.25', label=label if Y == 1 else '')
 
         offsets = [2.2, 2.8, 3.4]
-        labels = ['${:d}$', '${:d}$', r'$\tilde{{T}}_B={}$']
+        labels = ['${:d}$', '${:d}$', r'$T_B={}$']
 
-        if ax == axes[2]:
+        if ax == axes[0]:
             [ax.text(4, func(4, Y) + 0.05, label.format(int(Y)) + ' fm$^{-2}$',
                      ha='right', va='baseline', rotation=18)
              for Y, offset, label in zip(TB, offsets, labels)]
 
         ax.set_xlim(0, 4)
         ax.set_xticks([0, 1, 2, 3, 4])
-        ax.set_xlabel(r'$\tilde{T}_A$ [fm$^{-2}$]')
         ax.set_ylim(0, 4)
         ax.set_yticks([0, 1, 2, 3])
 
@@ -252,12 +263,12 @@ def cgc_compare():
         ax.legend(handles, labels, bbox_to_anchor=(-.01, 1.05),
                   loc=2, handlelength=1.2, handletextpad=.6)
 
-    axes[0].set_ylabel(r'Entropy density [fm$^{-3}$]')
+        ax.set_ylabel(r'Entropy density [fm$^{-3}$]')
+    axes[2].set_xlabel(r'Participant thickness $T_A$ [fm$^{-2}$]')
 
     finish(pad=0)
 
-@plot
-def thickness():
+def thickness(p=None):
     plt.figure(figsize=(columnwidth, aspect*columnwidth))
 
     X = np.linspace(-9, 9, 361)
@@ -268,12 +279,14 @@ def thickness():
 
     blue = plt.cm.Blues(0.6)
     dark_blue = plt.cm.Blues(0.7)
+    dark_red = plt.cm.Reds(0.6)
 
     plt.fill_between(X, Tmin, Tmax, lw=0, color=grey, zorder=0,
                      label=r'$T_\mathrm{min} < T < T_\mathrm{max}$')
     plt.fill_between(X, gen_mean(TA, TB, -1), gen_mean(TA, TB, 1),
                      color=blue, lw=0, alpha=0.4, label=r'$-1<p<1$')
-    plt.plot(X, gen_mean(TA, TB, 0), color=dark_blue, label='$p=0$')
+    if p is not None:
+        plt.plot(X, gen_mean(TA, TB, p), color=dark_red, label='$p={}$'.format(p))
 
     plt.xlim(-8.5, 8.5)
     plt.xticks(np.linspace(-8, 8, 9))
@@ -283,8 +296,10 @@ def thickness():
     plt.ylabel(r'Thickness [fm$^{-2}$]')
 
     handles, labels = plt.gca().get_legend_handles_labels()
-    handles = handles[1], handles[2], handles[0]
-    labels = labels[1], labels[2], labels[0]
+    if p is not None:
+        handles = handles[1], handles[2], handles[0]
+        labels = labels[1], labels[2], labels[0]
+
     plt.legend(handles, labels, labelspacing=0.4,
                handletextpad=0.4, markerfirst=False,
                bbox_to_anchor=(1.03, 1.05))
@@ -293,6 +308,21 @@ def thickness():
 
     finish()
 
+@plot
+def thickness_band():
+    thickness()
+
+@plot
+def thickness_arithmetic():
+    thickness(p=1)
+
+@plot
+def thickness_geometric():
+    thickness(p=0)
+
+@plot
+def thickness_harmonic():
+    thickness(p=-1)
 
 def split_cent_bins(array, bin_edges):
     """
@@ -307,126 +337,111 @@ def split_cent_bins(array, bin_edges):
 
 @plot
 def nch_per_npart():
-    plt.figure(figsize=(columnwidth, aspect*columnwidth))
+    plt.figure(figsize=(columnwidth, 1.1*aspect*columnwidth))
 
-    clow, chigh, alice_nch, alice_error = \
-        np.loadtxt('data/nch_per_npart/ALICE_PbPb_5.02.dat',
-                   usecols=(0, 1, 2, 3)).T
-    bin_edges = np.append(clow, chigh[-1:])
+    ax = plt.axes()
 
-    trento_data = np.loadtxt('data/nch_per_npart/PbPb.dat', usecols=(2, 3))
-    npart, nch = trento_data[trento_data[:, 1].argsort()[::-1]].T
-    trento_npart = np.array(
-        [bin.mean() for bin in split_cent_bins(npart, bin_edges)])
-    trento_nch = np.array(
-        [bin.mean() for bin in split_cent_bins(nch, bin_edges)])
-    norm = alice_nch[5]/trento_nch[5]
+    handles = {}
 
-    plt.plot(trento_npart, norm*trento_nch/(trento_npart/2),
-             zorder=1, color=plt.cm.Blues(0.6), label='Pb+Pb')
-    plt.errorbar(trento_npart, alice_nch/(trento_npart/2),
-                 yerr=alice_error/(trento_npart/2), fmt='o', capsize=0,
-                 color=offblack, mew=0, zorder=2, label='Pb+Pb')
+    for exp, energy, cmap in [
+            ('phenix', 130, 'Greens'),
+            ('phenix', 200, 'Purples'),
+            ('alice', 2760, 'Oranges'),
+            ('alice', 5020, 'Blues'),
+    ]:
+        cent_low, cent_high, exp_nch, exp_err = np.loadtxt(
+            'data/nch_per_npart/{}-{}.dat'.format(exp, energy),
+            usecols=range(4), unpack=True
+        )
+        cent_edges = np.append(cent_low, cent_high[-1])
 
-    npart, nch = np.loadtxt('data/nch_per_npart/pPb.dat', usecols=(2, 3)).T
-    plt.errorbar(npart.mean(), norm*nch.mean()/(npart.mean()/2), fmt='s',
-                 capsize=0, zorder=1, mec=plt.cm.Blues(0.6), mfc='white',
-                 mew=1, label=r'p+Pb')
-    plt.errorbar(npart.mean(), 16.81/(npart.mean()/2),
-                 yerr=0.71/(npart.mean()/2), fmt='s', capsize=0,
-                 color=offblack, mew=0, zorder=2, label='p+Pb')
+        trento_npart_nch = np.loadtxt(
+            'data/nch_per_npart/trento-{}.dat'.format(energy),
+            usecols=[2, 3]
+        )
 
-    plt.xlim(-20, 420)
-    plt.xticks(np.arange(0, 500, 100))
-    plt.xlabel(r'$N_\mathrm{part}$')
-    plt.ylim(3, 11)
-    plt.yticks(np.arange(4, 12, 2))
-    plt.ylabel('$(dN_\mathrm{ch}/d\eta) / (N_\mathrm{part} / 2)$')
+        trento_npart, trento_nch = np.array([
+            b.mean(axis=0) for b in
+            split_cent_bins(
+                trento_npart_nch[trento_npart_nch[:, 1].argsort()[::-1]],
+                cent_edges
+            )
+        ]).T
 
-    handles, labels = plt.gca().get_legend_handles_labels()
-    alice_handles = handles[1], handles[3]
-    alice_labels = labels[1], labels[3]
-    trento_handles = handles[0], handles[2]
-    trento_labels = labels[0], labels[2]
-    first_legend = plt.legend(alice_handles, alice_labels,
-                              bbox_to_anchor=(0.74, 0.4), handlelength=0.8,
-                              columnspacing=1.5, title='ALICE')
-    first_legend.get_title().set_fontsize(textiny)
-    plt.gca().add_artist(first_legend)
-    second_legend = plt.legend(trento_handles, trento_labels,
-                               bbox_to_anchor=(1, 0.4), handlelength=0.8,
-                               columnspacing=1.5, title='TRENTO')
-    second_legend.get_title().set_fontsize(textiny)
-    plt.text(15, 10, '$\sqrt{s_{NN}}$ = 5.02 TeV')
+        npart2 = trento_npart/2
+        norm = np.median(exp_nch/trento_nch)
+        if energy == 5020:
+            norm_5020 = norm
 
-    finish()
+        ax.plot(
+            trento_npart, norm*trento_nch/npart2,
+            color=getattr(plt.cm, cmap)(0.6), zorder=10
+        )
 
+        if exp == 'phenix':
+            key = 'AuAu'
+            fmt = 'D'
+            ms = 2.5
+        else:
+            key = 'PbPb'
+            fmt = 'o'
+            ms = 3
 
-def _zetas(T, Tc=0.180,
-           A1=-13.77, A2=27.55, A3=13.45,
-           lam1=0.9, lam2=0.25, lam3=0.9, lam4=0.22,
-           sig1=0.025, sig2=0.13, sig3=0.0025, sig4=0.022):
-    t = np.asarray(T)/Tc
-    zetas = np.empty_like(t)
+        handles[key] = ax.errorbar(
+            trento_npart, exp_nch/npart2, yerr=exp_err/npart2,
+            color=offblack, fmt=fmt, capsize=0, mew=0, zorder=20
+        )
 
-    low = t < 0.995
-    xm1 = t[low] - 1
-    zetas[low] = lam3*np.exp(xm1/sig3) + lam4*np.exp(xm1/sig4) + 0.03
+    npart, nch = np.loadtxt(
+        'data/nch_per_npart/trento-5020-pPb.dat',
+        usecols=(2, 3), unpack=True
+    )
+    npart2 = npart.mean()/2
 
-    high = t > 1.05
-    xm1 = t[high] - 1
-    zetas[high] = lam1*np.exp(-xm1/sig1) + lam2*np.exp(-xm1/sig2) + 0.001
+    x_pPb = -20
+    ax.plot(
+        x_pPb + 7*np.array([-1, 1]),
+        np.full(2, norm_5020*nch.mean()/(npart.mean()/2)),
+        color=plt.cm.Blues(0.6), zorder=10
+    )
 
-    mid = ~(low | high)
-    x = t[mid]
-    zetas[mid] = A1*x*x + A2*x - A3
+    # https://inspirehep.net/record/1190545
+    alice_pPb_nch_mean = 16.81
+    alice_pPb_nch_err = 0.71
 
-    return zetas
+    handles['pPb'] = ax.errorbar(
+        x_pPb, alice_pPb_nch_mean/npart2, yerr=alice_pPb_nch_err/npart2,
+        color=offblack, fmt='s', capsize=0, mew=0, zorder=20
+    )
+    ax.text(x_pPb + 3, alice_pPb_nch_mean/npart2 - .4, 'p+Pb',
+            ha='center', va='top', fontsize=textiny)
 
+    ax.set_xlim(2*x_pPb - 5, 420)
+    ax.set_ylim(0, 12.8)
 
-@plot
-def validation():
-    calibration = 'data/bayesian/calibration/results_err10.hdf'
-    batch_obs_validation = \
-        'data/bayesian/model/batch-observables-validation.hdf'
+    ax.set_xlabel(r'$N_\mathrm{part}$')
+    ax.set_ylabel(r'$(dN_\mathrm{ch}/d\eta) / (N_\mathrm{part} / 2)$')
 
-    observables = [
-        ('dN_dy/pion', r'$dN/dy_{\pi^\pm}$', (0, 3500)),
-        ('mean_pT/pion', r'$\langle p_T \rangle_{\pi^\pm}$', (0.4, 0.75)),
-        ('vn/2', r'$v_2\{2\}$', (0, 0.13)),
-    ]
+    ax.legend(
+        *zip(*[
+            (handles['PbPb'], 'Pb+Pb 2.76, 5.02 TeV'),
+            (handles['pPb'], 'p+Pb 5.02 TeV'),
+            (handles['AuAu'], 'Au+Au 130, 200 GeV'),
+            (lines.Line2D([], [], color=offblack), 'TRENTO'),
+        ]),
+        loc='upper left', bbox_to_anchor=[0, 1.04],
+        handlelength=.9
+    )
 
-    cent_edges = [0, 5, 10, 20, 30, 40, 50, 60, 70, 80]
-    cent_bins = list(zip(cent_edges[:-1], cent_edges[1:]))
+    for x, y, label in [
+            (300, 10.05, '5.02 TeV'),
+            (300,  6.65, '2.76 TeV'),
+            (280,  4.10, '200 GeV'),
+            (280,  2.22, '130 GeV'),
+    ]:
+        ax.text(x, y, label, fontsize=textiny)
 
-    fig, axes = plt.subplots(ncols=len(observables),
-                             figsize=(textwidth, 1.1*textwidth/3))
-
-    with \
-            h5py.File(calibration, 'r') as cal, \
-            h5py.File(batch_obs_validation, 'r') as vld:
-        for (key, label, lim), ax in zip(observables, axes):
-            for i, cmap in (0, 'Blues'), (4, 'Oranges'):
-                x = cal['validation'][key]['Y'][:, i]
-                xerr = cal['validation'][key]['Yerr'][:, i]
-                y = vld[key]['Y'][:, i]
-                yerr = vld[key]['Yerr'][:, i]
-                ax.errorbar(
-                    x, y, xerr=xerr, yerr=yerr, fmt='o', capsize=0,
-                    color=getattr(plt.cm, cmap)(0.8), mec='white', mew=0.3,
-                    label='–'.join(map(str, cent_bins[i])) + '%'
-                )
-            ax.plot(lim, lim, color='.7', zorder=-10)
-            ax.set_xlim(lim)
-            ax.set_ylim(lim)
-            ax.set_aspect('equal')
-            ax.set_xlabel('Predicted ' + label)
-            if ax.is_first_col():
-                ax.set_ylabel('Observed')
-                ax.legend(loc='best')
-            set_loc(ax)
-
-    finish()
+    finish(pad=0)
 
 
 @plot
@@ -670,29 +685,16 @@ def posterior_(nobs, title):
 
     finish(pad=0.2)
 
+
 @plot
 def posterior_k():
     posterior_(2, "Proton multiplicity fluctuations")
+
 
 @plot
 def posterior_w():
     posterior_(3, "Nucleon width")
 
-@plot
-def posterior_etamin():
-    posterior_(4, "Shear viscosity minimum")
-
-@plot
-def posterior_etaslope():
-    posterior_(5, "Shear viscosity slope")
-
-@plot
-def posterior_zeta():
-    posterior_(6, "Bulk viscosity normalization")
-
-@plot
-def posterior_Tsw():
-    posterior_(7, "Hydro-to-UrQMD switching temp.")
 
 @plot
 def mode_observables(**kwargs):
@@ -943,47 +945,8 @@ def etas_estimate(calibration='data/bayesian/calibration/results_err10.hdf'):
 
 
 @plot
-def trento_events():
-    fig, axes = plt.subplots(2, 2, sharex=True, sharey=True,
-                             figsize=(columnwidth, columnwidth))
-
-    x = np.linspace(-10, 10, 400)
-    lim = (-8, 8)
-    ticks = np.linspace(-5, 5, 3)
-
-    cdict = cm.get_cmap('Blues')._segmentdata
-    cdict['red'][0] = (0, 1, 1)
-    cdict['blue'][0] = (0, 1, 1)
-    cdict['green'][0] = (0, 1, 1)
-    my_cmap = LinearSegmentedColormap('Blues2', cdict)
-
-    for ax, iev in zip(axes.flat, [67, 56, 20, 43]):
-        with h5py.File('data/trento/events.hdf', 'r') as f:
-            ev = f['event_{}'.format(iev)]
-            profile = np.array(ev)
-            cs = ax.pcolorfast(x, x, profile, zorder=-100, cmap=my_cmap)
-            cs.set_clim(0.0, np.max(profile))
-            properties = \
-                '$N_{}$$=${}\n$b$$=${:.1f} fm'.format(r'\mathrm{part}',
-                                                      ev.attrs['npart'],
-                                                      ev.attrs['b'])
-            ax.annotate(properties, xy=(0.99, 0.99), xycoords='axes fraction',
-                        ha='right', va='top', fontsize=textiny)
-
-        for xy in ['x', 'y']:
-            getattr(ax, 'set_{}lim'.format(xy))(lim)
-            getattr(ax, 'set_{}ticks'.format(xy))(ticks)
-        if ax.is_last_row():
-            ax.set_xlabel('$x$ [fm]')
-        if ax.is_first_col():
-            ax.set_ylabel('$y$ [fm]')
-
-    finish(w_pad=0.3, h_pad=0.3)
-
-
-@plot
 def trento_minbias():
-    fig, axes = plt.subplots(6, 8, sharex=True, sharey=True,
+    fig, axes = plt.subplots(3, 4, sharex=True, sharey=True,
                              figsize=(paperwidth, paperheight))
     cmap = plt.cm.Blues(np.linspace(0 , 1, 20))
     cmap[0] = [1, 1, 1, 1]
@@ -1003,81 +966,66 @@ def trento_minbias():
 
 @plot
 def ipglasma():
-    fig, (ax1, ax2) = \
-        plt.subplots(2, 1, figsize=(columnwidth, 1.8*aspect*columnwidth),
-                     sharex=True)
+    trento_low = 'data/ipglasma/trento_-0.1-fs.dat'
+    trento = 'data/ipglasma/trento_0.0-fs.dat'
+    trento_high = 'data/ipglasma/trento_0.1-fs.dat'
 
-    # Event properties for IP-Glasma & Trento samples
-    models = ['data/ipglasma/ipglasma.dat']
-    models.extend(glob.glob('data/ipglasma/trento-samples/*.dat'))
+    ipglasma = 'data/ipglasma/ipglasma.dat'
 
-    for (i, f) in enumerate(models):
+    models = trento, ipglasma
+    colors = plt.cm.Blues(0.7), offblack
+    dashes = (), (4,2)
 
-        # plot style
-        if i == 0:
-            color = plt.cm.Oranges(0.4)
-            alpha = 1
-            lw = 1
-            zorder = 2
-            dashes = (4, 2)
-        else:
-            color = plt.cm.Blues(0.6)
-            alpha = 0.4
-            lw = 0.4
-            zorder = 1
-            dashes = []
+    fig = plt.figure(figsize=(columnwidth, aspect*columnwidth))
 
-        # load model results
-        b, mult, e2, e3 = np.loadtxt(f, usecols=(1, 3, 4, 5)).T
-        if i > 0:
-            mult *= 5.1
+    handles = {}
 
-        # impact parameter bins
-        edges = np.linspace(0, 16, 16)
+    for model, color, dash in zip(models, colors, dashes):
+        b, e2, e3 = np.loadtxt(model, usecols=(1,4,5)).T
 
-        # plot multiplicity
-        mult = np.array([mult[(lo < b) & (b < hi)].mean()
-                         for lo, hi in zip(edges[:-1], edges[1:])])
+        edges = np.linspace(0, 14, 14)
 
-        if i == 0:
-            norm = mult[2]
-
-        ax1.plot((edges[:-1] + edges[1:])/2, norm*mult/mult[2], color=color, lw=lw,
-                 alpha=alpha, dashes=dashes, zorder=zorder)
-
-        # plot eccentricity
-        e2, e3 = [[np.nanmean(en[(lo < b) & (b < hi)])
+        e2_mean, e3_mean = np.array([[np.nanmean(en[(lo < b) & (b < hi)])
                    for lo, hi in zip(edges[:-1], edges[1:])]
-                  for en in [e2, e3]]
-        ax2.plot((edges[:-1] + edges[1:])/2, e2, color=color, lw=lw,
-                 alpha=alpha, dashes=dashes, zorder=zorder)
-        ax2.plot((edges[:-1] + edges[1:])/2, e3, color=color, lw=lw,
-                 alpha=alpha, dashes=dashes, zorder=zorder)
+                  for en in [e2, e3]])
 
-    ax1.set_ylim(0, 2500)
-    ax1.set_yticks([0, 500, 1000, 1500, 2000, 2500])
-    ax1.set_ylabel('$dN_\mathrm{ch}/d\eta$')
-    ax1.set_title('Multiplicity', y=0.9)
-    ipglasma_handle = lines.Line2D([], [], dashes=(4, 2), color='0.7')
-    ipglasma_label = r'IP-Glasma$\vert_{\tau=0.4\mathrm{\ fm/c}}}$'
-    trento_handle = lines.Line2D([], [], lw=1, color=plt.cm.Blues(0.6))
-    trento_label = r'Trento & F.S.$\vert_{\tau=0.4\mathrm{\ fm/c}}}$'
-    ax1.legend([ipglasma_handle, trento_handle],
-               [ipglasma_label, trento_label],
-               bbox_to_anchor=(1.05, 0.875), handlelength=1.8)
-    ax1.text(1, 250, r'$\sqrt{s_{NN}} = 2.76$ TeV')
+        for y in [e2_mean, e3_mean]:
+            handles[model] = plt.plot(
+                (edges[:-1] + edges[1:])/2, y,
+                color=color, dashes=dash
+            )[0]
 
-    ax2.set_xlim(0, 16)
-    ax2.set_xticks([0, 4, 8, 12, 16])
-    ax2.set_yticks([0, 0.2, 0.4, 0.6])
-    ax2.set_ylim(0, 0.7)
-    ax2.set_xlabel('$b$ [fm]')
-    ax2.set_ylabel(r'$\varepsilon_n$')
-    ax2.set_title('Eccentricity', y=0.9)
-    ax2.text(11, 0.6, r'$\varepsilon_2$')
-    ax2.text(11, 0.36, r'$\varepsilon_3$')
+    b, e2, e3 = np.loadtxt(trento_low, usecols=(1,4,5)).T
+    e2_mean_lo, e3_mean_lo = np.array([[np.nanmean(en[(lo < b) & (b < hi)])
+                for lo, hi in zip(edges[:-1], edges[1:])]
+                for en in [e2, e3]])
 
-    finish(h_pad=1)
+    b, e2, e3 = np.loadtxt(trento_high, usecols=(1,4,5)).T
+    e2_mean_hi, e3_mean_hi = np.array([[np.nanmean(en[(lo < b) & (b < hi)])
+                for lo, hi in zip(edges[:-1], edges[1:])]
+                for en in [e2, e3]])
+
+    for lo, hi in [(e2_mean_lo, e2_mean_hi), (e3_mean_lo, e3_mean_hi)]:
+        fill_handle = plt.fill_between(
+            (edges[:-1] + edges[1:])/2, lo, hi,
+            color=plt.cm.Blues(0.2), lw=0
+        )
+
+    plt.xlabel('Impact parameter $b$ [fm]')
+    plt.ylabel(r'$\varepsilon_n$')
+    plt.ylim(0, 0.6)
+
+    plt.text(12.1, 0.48, r'$\varepsilon_2$', fontsize=texnormal)
+    plt.text(12.1, 0.26, r'$\varepsilon_3$', fontsize=texnormal)
+
+    plt.legend(
+        [(fill_handle, handles[trento]), handles[ipglasma]],
+        ['TRENTO $p = 0 \pm 0.1$', 'IP-Glasma'],
+        loc='upper left', handlelength=1.1
+    )
+
+    finish(pad=0)
+
 
 @plot
 def schematic():
@@ -1119,8 +1067,6 @@ def schematic():
     TB = np.fliplr(np.loadtxt('data/trento/TB.dat')).T
     ax2.imshow(TB, extent=(-9,9,-9,9), cmap=cmap, vmin=0.2)
     ax2.annotate(r'2) $T_A$', xy=(-10,8.75), ha='left', va='top', xycoords='data', fontsize=texnormal)
-    ax2.get_xaxis().set_visible(False)
-    ax2.spines['bottom'].set_visible(False)
     
     plt_nucleons(ax3) 
     cmap = plt.cm.Blues
@@ -1139,18 +1085,11 @@ def schematic():
     # global fig properties
     for ax in axes:
         ax.set_aspect('equal')
-        ax.set_xlim(-12,12)
-        ax.set_ylim(-9, 9)
-        ax.set_xticks([-10, -5, 0, 5, 10])
-        ax.set_yticks([-5, 0, 5])
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
-        if ax is not ax1:
-            ax.get_yaxis().set_visible(False)
-        if ax is ax2:
-            ax.get_yaxis().set_visible(False)
+        ax.set_xlim(-11.5,11.5)
+        ax.set_ylim(-10.5, 10.5)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.axis('off')
             
 
     plt.subplots_adjust(hspace=0, wspace=0)
@@ -1158,7 +1097,7 @@ def schematic():
     ax1.set_ylabel(r'$y$ $[\mathrm{fm}]$')
     ax3.set_xlabel(r'$x$ $[\mathrm{fm}]$')
     ax4.set_xlabel(r'$x$ $[\mathrm{fm}]$')
-    plt.tight_layout(h_pad=0, w_pad=0, pad=0.1) 
+    plt.tight_layout(w_pad=0, h_pad=0, rect=(-0.08, -0.16, 1.04, 1.06)) 
 
 @plot
 def mapping():
@@ -1185,10 +1124,10 @@ def mapping():
         ax1.arrow(xy[0] - 0.38, xy[1], 0.2, 0, head_width=0.1, head_length=0.1, shape='full', fc=offblack, ec=offblack) 
         ax1.arrow(xy[0] + 0.38, xy[1], -0.2, 0, head_width=0.1, head_length=0.1, shape='full', fc=offblack, ec=offblack) 
    
-    collision((2.5, 2.8), 2, 2, '^', plt.cm.Reds(.5), 21) 
-    collision((2.5, 2), 4, 4, 'D', plt.cm.Greens(.5), 15) 
-    collision((2.5, 1.2), 1, 2, 's', plt.cm.Purples(.5), 15) 
-    collision((2.5, .4), 1, 4, '+', plt.cm.Oranges(.5), 21) 
+    collision((2.5, 2.8), 2, 2, '^', plt.cm.Reds(.5), 30) 
+    collision((2.5, 2), 4, 4, 'D', plt.cm.Greens(.5), 22) 
+    collision((2.5, 1.2), 1, 2, 's', plt.cm.Purples(.5), 22) 
+    collision((2.5, .4), 1, 4, '*', plt.cm.Oranges(.5), 55) 
     
     TA = np.linspace(0, 5, 10)
     ax2.plot(TA, TA, color='0.6', dashes=(4, 2))
@@ -1196,10 +1135,10 @@ def mapping():
     ax2.text(3.0, 3.6, r'symmetric', va='center', ha='center', rotation=45.5, color='0.6', fontsize=8)
     ax2.text(3.6, 1.9, r'asymmetric', va='center', ha='center', rotation=-45.2, color='0.6', fontsize=8)
 
-    ax2.scatter(2, 2, marker='^', c=plt.cm.Reds(.5), edgecolors='none', s=21)
-    ax2.scatter(4, 4, marker='D', c=plt.cm.Greens(.5), edgecolors='none', s=15)
-    ax2.scatter(1, 2, marker='s', c=plt.cm.Purples(.5), edgecolors='none', s=15)
-    ax2.scatter(1, 4, marker='+', c=plt.cm.Oranges(.5), edgecolors='none', s=21)
+    ax2.scatter(2, 2, marker='^', c=plt.cm.Reds(.5), edgecolors='none', s=30, zorder=100)
+    ax2.scatter(4, 4, marker='D', c=plt.cm.Greens(.5), edgecolors='none', s=22, zorder=100)
+    ax2.scatter(1, 2, marker='s', c=plt.cm.Purples(.5), edgecolors='none', s=22, zorder=100)
+    ax2.scatter(1, 4, marker='*', c=plt.cm.Oranges(.5), edgecolors='none', s=55, zorder=100)
 
     ax2.set_xlim(0, 5)
     ax2.set_ylim(0, 5)
@@ -1207,6 +1146,66 @@ def mapping():
     ax2.set_ylabel('Thickness $T_B$')
     ax2.set_aspect('equal')
     finish()
+
+
+def trento3d(system):
+    if system == 'PbPb':
+        xlim = 5
+        ncent = 10
+        rows = 2
+        cols = 5
+        cen_L = [0, 5, 10, 20, 30, 40, 50, 60, 70, 80]
+        cen_H = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+    else:
+        xlim = 3
+        ncent = 8
+        rows = 2
+        cols = 4
+        cen_L = [0, 1, 5, 10, 20, 30, 40, 60]
+        cen_H = [1, 5, 10, 20, 30, 40, 60, 90]
+
+    #fig = plt.figure(figsize=(textwidth, aspect*textwidth))
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(textwidth, 0.4*textwidth), sharex=True)
+    ds = np.loadtxt("data/trento3d/{}-priori-post.dat".format(system))
+    yexp = np.loadtxt("data/trento3d/{}-exp.txt".format(system))
+    x = ds[0]
+    pri = ds[1::2]
+    post = ds[2::2]
+    nsample = len(pri)
+    n = 19
+
+    for c, ax in enumerate(axes.flat):
+        for i in range(nsample):
+            rand = np.random.random_sample()
+            rand1 = rand*0.6 + (1 - rand)*0.8
+            rand2 = rand*0.4 + (1 - rand)*0.7
+            ax.plot(x[c*n:c*n + n], pri[i][c*n:c*n + n], color=str(rand1), linewidth=0.2, alpha = 0.15)
+            ax.plot(x[c*n:c*n + n], post[i][c*n:c*n + n], color=plt.cm.Reds(rand2), linewidth=0.2, alpha = 0.15)
+
+        ax.scatter(x[c*n:c*n + n:2], yexp[c*n:c*n + n:2], color=offblack, s=2, zorder=3)
+        ax.set_xlim(-xlim, xlim)
+        ax.set_ylim(yexp[c*n + 10]*0.5, yexp[c*n + 10]*1.5)
+        set_loc(ax, 'x', nbins=5)
+        set_loc(ax, 'y', nbins=5)
+
+        if c >= cols:
+            ax.set_xlabel(r"$\eta$")
+        if c==0 or c==cols:
+            ax.set_ylabel(r"$dN_\mathrm{ch}/d\eta$")
+        ax.annotate("%d—%d%%"%(cen_L[c], cen_H[c]), xy=(0.5,1), xycoords='axes fraction', ha='center', va='top')
+
+    finish(h_pad=0.6, w_pad=0)
+
+
+@plot
+def trento3d_PbPb():
+    trento3d('PbPb')
+
+
+@plot
+def trento3d_pPb():
+    trento3d('pPb')
+
 
 def main():
     parser = argparse.ArgumentParser()
