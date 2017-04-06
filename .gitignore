@@ -1,6 +1,4 @@
-*.pdf
-*.png
 *.hdf
-*.svg
 build/
 fig/data
+fig/events
